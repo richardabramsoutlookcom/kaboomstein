@@ -250,7 +250,142 @@ class Game {
         // Bonus popup animations
         this.popups = [];
 
+        // Mobile controls
+        this.isMobile = this.detectMobile();
+        this.mobileControlType = null;
+        this.accelerometerData = { x: 0, y: 0, z: 0 };
+        this.calibrationOffset = 0;
+        this.touchControls = { left: false, right: false };
+
         this.setupEventListeners();
+        this.initMobileControls();
+    }
+
+    detectMobile() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+               (window.innerWidth <= 800 && 'ontouchstart' in window);
+    }
+
+    initMobileControls() {
+        if (this.isMobile) {
+            // Show mobile control selection on startup
+            document.getElementById('mobileControlSelect').style.display = 'flex';
+            document.getElementById('startScreen').style.display = 'none';
+        }
+    }
+
+    selectMobileControl(type) {
+        this.mobileControlType = type;
+        document.getElementById('mobileControlSelect').style.display = 'none';
+        document.getElementById('startScreen').style.display = 'flex';
+
+        // Update control text
+        const controlsText = document.getElementById('controlsText');
+        if (type === 'accelerometer') {
+            controlsText.textContent = '📱 Tilt your phone left/right to move • Tap to start';
+            this.setupAccelerometer();
+        } else if (type === 'buttons') {
+            controlsText.textContent = '⬅️ ➡️ Tap buttons to move • Tap Play to start';
+            document.getElementById('mobileControls').style.display = 'flex';
+            this.setupTouchButtons();
+        } else {
+            controlsText.textContent = '← → Arrow Keys or A/D to move • Space/Enter to start';
+        }
+    }
+
+    setupAccelerometer() {
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            // iOS 13+ requires permission
+            DeviceOrientationEvent.requestPermission()
+                .then(permissionState => {
+                    if (permissionState === 'granted') {
+                        window.addEventListener('deviceorientation', (e) => this.handleOrientation(e), true);
+                    } else {
+                        alert('Accelerometer permission denied. Using button controls instead.');
+                        this.selectMobileControl('buttons');
+                    }
+                })
+                .catch(() => {
+                    alert('Accelerometer not available. Using button controls instead.');
+                    this.selectMobileControl('buttons');
+                });
+        } else {
+            // Android and older iOS versions
+            window.addEventListener('deviceorientation', (e) => this.handleOrientation(e), true);
+        }
+
+        // Calibrate on first tap
+        let calibrated = false;
+        const calibrate = () => {
+            if (!calibrated) {
+                this.calibrationOffset = this.accelerometerData.x;
+                calibrated = true;
+                document.removeEventListener('touchstart', calibrate);
+            }
+        };
+        document.addEventListener('touchstart', calibrate);
+    }
+
+    handleOrientation(event) {
+        // Beta is front-to-back tilt (-180 to 180)
+        // Gamma is left-to-right tilt (-90 to 90)
+        this.accelerometerData = {
+            x: event.gamma || 0,  // left-to-right tilt
+            y: event.beta || 0,   // front-to-back tilt
+            z: event.alpha || 0   // compass direction
+        };
+    }
+
+    setupTouchButtons() {
+        const leftBtn = document.getElementById('leftBtn');
+        const rightBtn = document.getElementById('rightBtn');
+
+        // Prevent default touch behavior
+        const preventDefaults = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        };
+
+        // Left button
+        leftBtn.addEventListener('touchstart', (e) => {
+            preventDefaults(e);
+            this.touchControls.left = true;
+        }, { passive: false });
+
+        leftBtn.addEventListener('touchend', (e) => {
+            preventDefaults(e);
+            this.touchControls.left = false;
+        }, { passive: false });
+
+        leftBtn.addEventListener('touchcancel', (e) => {
+            preventDefaults(e);
+            this.touchControls.left = false;
+        }, { passive: false });
+
+        // Right button
+        rightBtn.addEventListener('touchstart', (e) => {
+            preventDefaults(e);
+            this.touchControls.right = true;
+        }, { passive: false });
+
+        rightBtn.addEventListener('touchend', (e) => {
+            preventDefaults(e);
+            this.touchControls.right = false;
+        }, { passive: false });
+
+        rightBtn.addEventListener('touchcancel', (e) => {
+            preventDefaults(e);
+            this.touchControls.right = false;
+        }, { passive: false });
+
+        // Also support mouse for testing
+        leftBtn.addEventListener('mousedown', () => this.touchControls.left = true);
+        leftBtn.addEventListener('mouseup', () => this.touchControls.left = false);
+        leftBtn.addEventListener('mouseleave', () => this.touchControls.left = false);
+
+        rightBtn.addEventListener('mousedown', () => this.touchControls.right = true);
+        rightBtn.addEventListener('mouseup', () => this.touchControls.right = false);
+        rightBtn.addEventListener('mouseleave', () => this.touchControls.right = false);
     }
 
     setupEventListeners() {
@@ -268,6 +403,15 @@ class Game {
         document.addEventListener('keyup', (e) => {
             this.keys[e.key] = false;
         });
+
+        // Touch to start for mobile
+        if (this.isMobile) {
+            document.getElementById('startScreen').addEventListener('touchstart', (e) => {
+                if (e.target.classList.contains('start-btn') || !this.isRunning) {
+                    // Allow normal button behavior
+                }
+            });
+        }
 
         document.getElementById('soundToggle').addEventListener('click', () => {
             const enabled = this.audio.toggle();
@@ -312,13 +456,39 @@ class Game {
     }
 
     update() {
-        // Move player
+        // Move player based on control type
+        let movement = 0;
+
+        // Keyboard controls
         if (this.keys['ArrowLeft'] || this.keys['a'] || this.keys['A']) {
-            this.player.x -= this.player.speed;
+            movement -= this.player.speed;
         }
         if (this.keys['ArrowRight'] || this.keys['d'] || this.keys['D']) {
-            this.player.x += this.player.speed;
+            movement += this.player.speed;
         }
+
+        // Touch button controls
+        if (this.mobileControlType === 'buttons') {
+            if (this.touchControls.left) {
+                movement -= this.player.speed;
+            }
+            if (this.touchControls.right) {
+                movement += this.player.speed;
+            }
+        }
+
+        // Accelerometer controls
+        if (this.mobileControlType === 'accelerometer') {
+            const tilt = this.accelerometerData.x - this.calibrationOffset;
+            // Map tilt angle to movement speed
+            // Typical tilt range is -30 to 30 degrees for comfortable play
+            const sensitivity = 0.4;
+            movement = tilt * sensitivity;
+            // Clamp movement to reasonable speed
+            movement = Math.max(-this.player.speed, Math.min(this.player.speed, movement));
+        }
+
+        this.player.x += movement;
 
         // Keep player in bounds
         this.player.x = Math.max(this.player.width / 2, Math.min(this.canvas.width - this.player.width / 2, this.player.x));

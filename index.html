@@ -173,6 +173,86 @@
             background: rgba(255,255,255,0.3);
         }
 
+        #mobileControls {
+            display: none;
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            justify-content: center;
+            gap: 20px;
+            z-index: 5;
+        }
+
+        .mobile-btn {
+            background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+            color: #1a1a2e;
+            border: 3px solid #fff;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            font-size: 2em;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            box-shadow: 0 4px 15px rgba(255,215,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .mobile-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(255,215,0,0.7);
+        }
+
+        #mobileControlSelect {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            z-index: 15;
+            padding: 20px;
+        }
+
+        .control-option {
+            background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+            color: #1a1a2e;
+            border: none;
+            padding: 20px 40px;
+            font-size: 1.2em;
+            font-family: 'Georgia', serif;
+            font-weight: bold;
+            border-radius: 15px;
+            cursor: pointer;
+            margin: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(255,215,0,0.4);
+            width: 80%;
+            max-width: 300px;
+        }
+
+        .control-option:active {
+            transform: scale(0.95);
+            box-shadow: 0 6px 20px rgba(255,215,0,0.6);
+        }
+
+        .control-desc {
+            color: #87ceeb;
+            margin-top: 10px;
+            font-size: 0.9em;
+            text-align: center;
+        }
+
         .bonus-popup {
             position: absolute;
             color: #ffd700;
@@ -197,13 +277,29 @@
         <canvas id="gameCanvas" width="800" height="600"></canvas>
         <button id="soundToggle">🔊 Sound ON</button>
 
+        <div id="mobileControlSelect">
+            <div class="screen-title">Choose Your Controls</div>
+            <button class="control-option" onclick="game.selectMobileControl('accelerometer')">
+                📱 Tilt Controls
+                <div class="control-desc">Tilt your phone to move</div>
+            </button>
+            <button class="control-option" onclick="game.selectMobileControl('buttons')">
+                ⬅️ ➡️ Button Controls
+                <div class="control-desc">Tap buttons to move</div>
+            </button>
+            <button class="control-option" onclick="game.selectMobileControl('keyboard')">
+                ⌨️ Keyboard Controls
+                <div class="control-desc">Use keyboard/mouse</div>
+            </button>
+        </div>
+
         <div id="startScreen">
             <div class="screen-title">Welcome to Kaboomstein!</div>
             <p class="screen-text">Rabbi Goldstein is dropping yamulkas from above!</p>
             <p class="screen-text">Help Moshe on his unicycle catch them all!</p>
             <p class="screen-text">🥯 Catch bagels and mezuzahs for bonus points!</p>
             <button class="start-btn" onclick="game.start()">Play!</button>
-            <p class="controls">← → Arrow Keys or A/D to move • Space/Enter to start</p>
+            <p class="controls" id="controlsText">← → Arrow Keys or A/D to move • Space/Enter to start</p>
         </div>
 
         <div id="gameOverScreen">
@@ -212,6 +308,11 @@
             <div class="final-score">Final Score: <span id="finalScore">0</span></div>
             <button class="start-btn" onclick="game.start()">Play Again!</button>
             <p class="controls">Space/Enter to restart</p>
+        </div>
+
+        <div id="mobileControls">
+            <button class="mobile-btn" id="leftBtn">◀</button>
+            <button class="mobile-btn" id="rightBtn">▶</button>
         </div>
     </div>
 
