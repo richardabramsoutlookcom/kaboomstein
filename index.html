@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaboomstein!</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Georgia', serif;
+            overflow: hidden;
+        }
+
+        h1 {
+            color: #ffd700;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.5), 0 0 20px rgba(255,215,0,0.3);
+            margin-bottom: 10px;
+            font-size: 3em;
+            letter-spacing: 4px;
+        }
+
+        .subtitle {
+            color: #87ceeb;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        #gameContainer {
+            position: relative;
+            border: 4px solid #ffd700;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(255,215,0,0.3);
+        }
+
+        #gameCanvas {
+            display: block;
+            background: linear-gradient(180deg, #87ceeb 0%, #e0f0ff 100%);
+            border-radius: 6px;
+        }
+
+        #ui {
+            display: flex;
+            justify-content: space-between;
+            width: 800px;
+            padding: 15px 20px;
+            background: rgba(0,0,0,0.7);
+            border-radius: 10px;
+            margin-top: 15px;
+            color: #fff;
+            font-size: 1.2em;
+            flex-wrap: wrap;
+            gap: 10px 20px;
+        }
+
+        .ui-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ui-label {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .ui-value {
+            color: #fff;
+            min-width: 60px;
+        }
+
+        #lives {
+            display: flex;
+            gap: 5px;
+        }
+
+        .life {
+            font-size: 1.5em;
+        }
+
+        #startScreen, #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            z-index: 10;
+        }
+
+        #gameOverScreen {
+            display: none;
+        }
+
+        .screen-title {
+            color: #ffd700;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .screen-text {
+            color: #fff;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            text-align: center;
+            max-width: 80%;
+        }
+
+        .final-score {
+            color: #ffd700;
+            font-size: 2em;
+            margin: 20px 0;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+            color: #1a1a2e;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.3em;
+            font-family: 'Georgia', serif;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(255,215,0,0.4);
+        }
+
+        .start-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(255,215,0,0.6);
+        }
+
+        .controls {
+            color: #87ceeb;
+            margin-top: 30px;
+            font-size: 1em;
+        }
+
+        #soundToggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid #ffd700;
+            color: #ffd700;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: 'Georgia', serif;
+            transition: background 0.2s;
+            z-index: 5;
+        }
+
+        #soundToggle:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .bonus-popup {
+            position: absolute;
+            color: #ffd700;
+            font-weight: bold;
+            font-size: 1.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-50px); }
+        }
+    </style>
+</head>
+<body>
+    <h1>KABOOMSTEIN!</h1>
+    <p class="subtitle">Catch the yamulkas, earn the nachas!</p>
+
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <button id="soundToggle">🔊 Sound ON</button>
+
+        <div id="startScreen">
+            <div class="screen-title">Welcome to Kaboomstein!</div>
+            <p class="screen-text">Rabbi Goldstein is dropping yamulkas from above!</p>
+            <p class="screen-text">Help Moshe on his unicycle catch them all!</p>
+            <p class="screen-text">🥯 Catch bagels and mezuzahs for bonus points!</p>
+            <button class="start-btn" onclick="game.start()">Play!</button>
+            <p class="controls">← → Arrow Keys or A/D to move • Space/Enter to start</p>
+        </div>
+
+        <div id="gameOverScreen">
+            <div class="screen-title">Oy Vey!</div>
+            <p class="screen-text">You missed a yamulka!</p>
+            <div class="final-score">Final Score: <span id="finalScore">0</span></div>
+            <button class="start-btn" onclick="game.start()">Play Again!</button>
+            <p class="controls">Space/Enter to restart</p>
+        </div>
+    </div>
+
+    <div id="ui">
+        <div class="ui-item">
+            <span class="ui-label">Score:</span>
+            <span class="ui-value" id="score">0</span>
+        </div>
+        <div class="ui-item">
+            <span class="ui-label">High Score:</span>
+            <span class="ui-value" id="highScore">0</span>
+        </div>
+        <div class="ui-item">
+            <span class="ui-label">Level:</span>
+            <span class="ui-value" id="level">1</span>
+        </div>
+        <div class="ui-item">
+            <span class="ui-label">Yamulkas:</span>
+            <span class="ui-value" id="yamulkaCount">0</span>
+        </div>
+        <div class="ui-item">
+            <span class="ui-label">Lives:</span>
+            <div id="lives">
+                <span class="life">🕎</span>
+                <span class="life">🕎</span>
+                <span class="life">🕎</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
