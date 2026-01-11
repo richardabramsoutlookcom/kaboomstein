@@ -212,12 +212,20 @@ class Game {
         this.ctx = this.canvas.getContext('2d');
         this.audio = new AudioManager();
 
+        // Base game dimensions
+        this.baseWidth = 800;
+        this.baseHeight = 600;
+        this.scale = 1;
+
         this.isRunning = false;
         this.score = 0;
         this.level = 1;
         this.lives = 3;
         this.yamulkaCaught = 0;
         this.highScore = Number(localStorage.getItem('kaboomsteinHighScore')) || 0;
+
+        // Initialize canvas size
+        this.resizeCanvas();
 
         // Rabbi properties
         this.rabbi = {
@@ -259,6 +267,27 @@ class Game {
 
         this.setupEventListeners();
         this.initMobileControls();
+    }
+
+    resizeCanvas() {
+        const container = document.getElementById('gameContainer');
+        const maxWidth = Math.min(this.baseWidth, window.innerWidth - 20);
+        const maxHeight = window.innerHeight * (this.isMobile ? 0.6 : 0.8);
+
+        // Calculate scale to maintain aspect ratio
+        const scaleX = maxWidth / this.baseWidth;
+        const scaleY = maxHeight / this.baseHeight;
+        this.scale = Math.min(scaleX, scaleY, 1);
+
+        // Set canvas internal resolution
+        this.canvas.width = this.baseWidth;
+        this.canvas.height = this.baseHeight;
+
+        // Set display size via CSS
+        const displayWidth = Math.floor(this.baseWidth * this.scale);
+        const displayHeight = Math.floor(this.baseHeight * this.scale);
+        container.style.width = displayWidth + 'px';
+        container.style.height = displayHeight + 'px';
     }
 
     detectMobile() {
@@ -412,6 +441,18 @@ class Game {
                 }
             });
         }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            this.resizeCanvas();
+        });
+
+        // Handle orientation change
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                this.resizeCanvas();
+            }, 100);
+        });
 
         document.getElementById('soundToggle').addEventListener('click', () => {
             const enabled = this.audio.toggle();
